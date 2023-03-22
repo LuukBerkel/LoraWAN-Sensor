@@ -86,7 +86,7 @@ int counter::calibrate(int difference_threshold, int people_threshold){
 
 int counter::count(){
     // Predefining variables
-    int output, people_count;
+    int output, people_count = 0;
 
     // Checking if base is not null
     if (base_buffer == NULL){
