@@ -11,4 +11,4 @@ This project is for the subject intelligent sensor networks. Here by you needed 
 - Pir-sensor 
 
 ## Used test setup
-![proto setup](1679157225211.jpg)
+![proto setup](Media/1679157225211.jpg)

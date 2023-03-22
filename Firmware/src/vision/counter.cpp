@@ -99,16 +99,15 @@ int counter::count(){
         return ERROR_CAPTURE_FAILED;
     }
 
-
     // Doing threshold operation
     output = vision_threshold(base_buffer, compare_buffer,difference_threshold);
-    if (!output){
+    if (output != NO_ERROR){
         return ERROR_DETECTION_FAILED;
     }
     
     // Doing blob detection operation
     output = vision_blob_detection(compare_buffer, people_threshold);
-    if (!output){
+    if (output  != NO_ERROR){
         return ERROR_DETECTION_FAILED;
     }
 
