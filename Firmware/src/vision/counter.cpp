@@ -22,6 +22,11 @@
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
+counter::counter(int width, int heigth, framesize_t resolution){
+    counter::resolution = resolution;
+    counter::detection = new vision(width, heigth);
+}
+
 int counter::begin(){
     // Config of the camera
     camera_config_t config;
@@ -100,13 +105,13 @@ int counter::count(){
     }
 
     // Doing threshold operation
-    output = vision_threshold(base_buffer, compare_buffer,difference_threshold);
+    output = counter::detection->threshold(base_buffer, compare_buffer,difference_threshold);
     if (output != NO_ERROR){
         return ERROR_DETECTION_FAILED;
     }
     
     // Doing blob detection operation
-    output = vision_blob_detection(compare_buffer, people_threshold);
+    output = counter::detection->blob_detection(compare_buffer, people_threshold);
     if (output  != NO_ERROR){
         return ERROR_DETECTION_FAILED;
     }

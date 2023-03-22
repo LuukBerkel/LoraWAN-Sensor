@@ -4,7 +4,7 @@
 // Counter settings
 #define COUNTER_DIFF_THRESHOLD 50
 #define COUNTER_PEOPLE_THRESHOLD 20
-counter Counter;
+counter* visual_counter = new counter(360, 240, FRAMESIZE_QVGA);
 
 void setup() {
   // Setting up exit code
@@ -13,7 +13,7 @@ void setup() {
   Serial.println("[DEBUG]: Debug mode active. This will reduce performance");
 
   // Initing camera hardware
-  exit_code = Counter.begin();
+  exit_code = visual_counter->begin();
   if (exit_code != NO_ERROR){
     Serial.println("[ERROR]: Camera failed to start.");
 
@@ -23,7 +23,7 @@ void setup() {
     ESP.restart();
   }
 
-  exit_code = Counter.calibrate(COUNTER_DIFF_THRESHOLD, COUNTER_PEOPLE_THRESHOLD);
+  exit_code = visual_counter->calibrate(COUNTER_DIFF_THRESHOLD, COUNTER_PEOPLE_THRESHOLD);
   if (exit_code != NO_ERROR){
     if (exit_code == ERROR_CAPTURE_FAILED) {
       Serial.println("[ERROR]: Camera capture failed.");
@@ -42,7 +42,7 @@ void setup() {
 
 void loop() {
   // Taking measurment.
-  int result = Counter.count();
+  int result = visual_counter->count();
   if (result >= 0){
     Serial.print("[INFO]: People count = ");
     Serial.println(result);

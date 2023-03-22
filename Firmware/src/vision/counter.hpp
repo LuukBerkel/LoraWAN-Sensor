@@ -2,6 +2,7 @@
 #define COUNTER_H
 
 #include "esp_camera.h"
+#include "vision.hpp"
 
 // Error codes
 #define NO_ERROR 1
@@ -19,7 +20,12 @@ private:
     int difference_threshold;
     int people_threshold;
     uint8_t* base_buffer = NULL;
+    vision* detection;
+    framesize_t resolution;
 public:
+    /// @brief Constructor of counter
+    counter(int width, int heigth, framesize_t resolution);
+
     /// @brief Begin starts the camera for measurements
     /// @return An error code or no error
     int begin();
