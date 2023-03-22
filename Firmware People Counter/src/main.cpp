@@ -1,39 +1,61 @@
 #include <Arduino.h>
-#include "vision/vision.hpp"
+#include "vision/counter.hpp"
 
-// Vision settings
-#define VISION_DIFF_THRESHOLD 50
-#define VISION_PEOPLE_THRESHOLD 20
-vision Vision;
+// Counter settings
+#define COUNTER_DIFF_THRESHOLD 50
+#define COUNTER_PEOPLE_THRESHOLD 20
+counter Counter;
 
 void setup() {
+  // Setting up exit code
+  int exit_code;
   Serial.begin(115200);
-  Serial.println("Starting people count sensor..");
+  Serial.println("[DEBUG]: Debug mode active. This will reduce performance");
 
-  while (!Vision.begin()){
-    Serial.println("Failed to start camera!");
+  // Initing camera hardware
+  exit_code = Counter.begin();
+  if (exit_code != NO_ERROR){
+    Serial.println("[ERROR]: Camera failed to start.");
+
+    // Restarting because error
+    Serial.println("[INFO]: Restarting in ten seconds.");
     sleep(10000);
+    ESP.restart();
   }
 
-  if (!Vision.calibrate(VISION_DIFF_THRESHOLD, VISION_PEOPLE_THRESHOLD)){
-    Serial.println("Failed to take base!");
+  exit_code = Counter.calibrate(COUNTER_DIFF_THRESHOLD, COUNTER_PEOPLE_THRESHOLD);
+  if (exit_code != NO_ERROR){
+    if (exit_code == ERROR_CAPTURE_FAILED) {
+      Serial.println("[ERROR]: Camera capture failed.");
+    } else {
+      Serial.println("[ERROR]: Memory operations failed.");
+    }
+
+    // Restarting because error
+    Serial.println("[INFO]: Restarting in ten seconds.");
+    sleep(10000);
+    ESP.restart();
   }
 
-  Serial.println("Setup was a succes...");
-  delay(1000);
+  Serial.println("[INFO]: Setup was a succes.");
 }
 
 void loop() {
-  int result = Vision.count();
-  if (result == -2){
-    Serial.println("No base to compare!");
-  }
-  else if (result == -1){
-    Serial.println("Other erorr occured!");
-  } else {
-    Serial.print(result);
-    Serial.println("People count");
+  // Taking measurment.
+  int result = Counter.count();
+  if (result >= 0){
+    Serial.print("[INFO]: People count = ");
+    Serial.println(result);
   }
 
+  // Printing error codes
+  if (result == ERROR_NOT_CALIBRATED){
+    Serial.println("[ERROR]: Camera was not calibrated.");
+  } else if (result == ERROR_CAPTURE_FAILED){
+    Serial.println("[ERROR]: Camera capture failed.");
+  } else if (result == ERROR_DETECTION_FAILED){
+    Serial.println("[ERROR]: Detection operations failed.");
+  }
+  
   delay(5000);
 }
