@@ -20,6 +20,7 @@ private:
     int difference_threshold;
     int people_threshold;
     uint8_t* base_buffer = NULL;
+    uint16_t* compare_buffer = NULL;
     vision* detection;
     framesize_t resolution;
 public:

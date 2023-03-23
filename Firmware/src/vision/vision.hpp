@@ -8,6 +8,7 @@
 #define NO_ERROR 1
 #define ERROR_INVALID_INPUT -1
 #define ERROR_THRESHOLD -2
+#define ERROR_GROUP_OVERFLOW -3
 
 class vision
 {
@@ -15,15 +16,20 @@ private:
     // Img parameters
     int width, height;
 
-    uint8_t* blob_get_pointer(camera_fb_t* compare, uint8_t* target, int row, int column, int row_len, int column_len);
+    uint8_t* blob_get_pointer(camera_fb_t* compare, int row, int column, int row_len, int column_len);
 
-    void blob_bordering_pointers(camera_fb_t* compare, uint8_t* target, uint8_t** pointers, int row, int column, int row_len, int column_len);
+    void blob_bordering_pointers(camera_fb_t* compare, uint8_t* pointers[4], int row, int column, int row_len, int column_len);
+
+    int blob_sort_indexer(camera_fb_t* compare, int group, int row_len, int column_len);
+
+    void blob_sort_replacer(camera_fb_t* compare, int group, int new_group, int row_len, int column_len);
 
     /// @brief The blob scanner is a private method that will group all blobs and throw out all that to small.
-    void blob_scanner(camera_fb_t* compare, uint8_t* target, int quadrant_width, int quadrant_heigth);
+    void blob_scanner(camera_fb_t* compare, int* row, int* column, int* group);
 
-    /// @brief The blob joiner is a private method that will join quadrants togther. 
-    void blob_joiner(camera_fb_t* compare, int quadrant_width, int quadrant_heigth, int target_width, int target_heigt);
+    void blob_merger(camera_fb_t* compare, int* row_max, int* column_max, int* group);
+
+    void blob_thresholder(camera_fb_t* compare,  int* row_max, int* column_max, int* group, int threshold);
 
     /// @brief The blob counter counts the number of groups detected.
     int blob_count();

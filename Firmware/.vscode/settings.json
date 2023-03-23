@@ -10,6 +10,7 @@
         "memory": "cpp",
         "random": "cpp",
         "initializer_list": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "functional": "cpp"
     }
 }
