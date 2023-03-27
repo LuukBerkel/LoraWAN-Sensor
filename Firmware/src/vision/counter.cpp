@@ -111,8 +111,8 @@ int counter::count(){
     }
     
     // Doing blob detection operation
-    output = counter::detection->blob_detection(compare_buffer, people_threshold);
-    if (output  != NO_ERROR){
+    output = counter::detection->blob_detection(compare_buffer, 0, people_threshold);
+    if (output < 0){
         return ERROR_DETECTION_FAILED;
     }
 
