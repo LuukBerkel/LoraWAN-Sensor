@@ -39,11 +39,13 @@ int vision::blob_detection(camera_fb_t* compare, int base, int threshold){
     int total = 0;
     for (size_t i = 0; i < compare->len; i++)
     {
-        if (compare->buf[i]==1){
+        if (compare->buf[i] > 0){
             total = total + 1;
         }
     }
 
     // Removing base and divide by threshold
-    return ((total - base) / threshold);
+    int result =  total - base;
+    result = result / threshold;
+    return result;
 }

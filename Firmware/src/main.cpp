@@ -2,18 +2,21 @@
 #include "vision/counter.hpp"
 #include "Esp.h"
 #include "lora/lora.hpp"
+#include "soc/soc.h"           
+#include "soc/rtc_cntl_reg.h" 
+#include "time.h"
 
 // Debug or Lora mode
 #define LORA_MODE
 //#define DEBUG_MODE
 
 // Counter settings
-const int diff_threshold = 50;
-const int people_threshold = 20;
-const framesize_t frame = FRAMESIZE_QVGA;
-const int frame_width = 360;
-const int frame_heigth = 240;
-counter* visual_counter = new counter(frame_width, frame_heigth, frame);
+// const int diff_threshold = 50;
+// const int people_threshold = 20;
+// const framesize_t frame = FRAMESIZE_QVGA;
+// const int frame_width = 360;
+// const int frame_heigth = 240;
+// counter* visual_counter = new counter(frame_width, frame_heigth, frame);
 
 // Lorawan settings
 #ifdef LORA_MODE
@@ -22,10 +25,11 @@ lora* lorawan = new lora;
 
 // Wake  up settings
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  5        /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP  60        /* Time ESP32 will go to sleep (in seconds) */
 
 #define BUTTON_PIN_BITMASK 0x4000 /* Pin number 14 for wake up on intterupt*/
 RTC_DATA_ATTR int bootCount = 0;
+RTC_DATA_ATTR unsigned long lastBoot = 0;
 
 // State machine states.
 typedef enum {
@@ -36,9 +40,15 @@ typedef enum {
 application_states active_state;
 
 void setup() {
+  // Disabling brownout
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+
+  // Starting debug serial
 #ifdef DEBUG_MODE
   Serial.begin(115200);
 #endif
+
+  // Setting wakeup settings.
   ++bootCount;
   esp_sleep_wakeup_cause_t wakeup_reason;
   wakeup_reason = esp_sleep_get_wakeup_cause();
@@ -55,6 +65,8 @@ void setup() {
       active_state = CONFIG_STATE; 
       break;
   }
+
+  delay(100);
 }
 
 void extend_state(){
@@ -62,33 +74,35 @@ void extend_state(){
 #ifdef DEBUG_MODE
   Serial.println("[INFO]: Movement detected");
 #endif
+
+  unsigned long now = time(NULL);
+  unsigned long to_sleep = (lastBoot + TIME_TO_SLEEP) - now;
+  if (to_sleep > TIME_TO_SLEEP){
+    to_sleep = 0; 
+  } 
+
+  #ifdef DEBUG_MODE
+    Serial.println(to_sleep);
+  #endif
+
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_14,1);
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  esp_sleep_enable_timer_wakeup(to_sleep * uS_TO_S_FACTOR);
 }
 
 void measurment_state(){
-  /*********Boot step*********/
-#ifdef LORA_MODE
   // Booting lora
+#ifdef LORA_MODE
   int err = lorawan->begin();
   if (err != NO_ERROR){
     delay(10000);
     ESP.restart();
   }
 #endif
+
+  // Debug printing
 #ifdef DEBUG_MODE
   Serial.println("[INFO]: Sendig measurements");
 #endif
-
- // Booting counter
-  // int err1 = visual_counter->begin();
-  // if (err1 != NO_ERROR){
-  //   delay(10000);
-  //   ESP.restart();
-  // }
-
-
-  /*******Measuring step********/
 
   // Measuring amount of people if interrupt count > 0
   int people_count = 0;
@@ -96,7 +110,7 @@ void measurment_state(){
 #ifdef DEBUG_MODE
      Serial.println("[Info] Detected people");
 #endif
-    people_count = 1;
+    people_count = bootCount;
   }
 
 #ifdef LORA_MODE
@@ -104,30 +118,24 @@ void measurment_state(){
 #endif
 
   /************Reset step************/
-
   // Setting intterupts and sleep.
   bootCount = 0;
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_14,1);
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  lastBoot= time(NULL);
 }
 
 void config_state(){
+  // Debug printing
 #ifdef DEBUG_MODE
   Serial.println("[INFO]: Configuring");
 #endif
-  // Booting counter
-  // int err = visual_counter->begin();
-  // if (err != NO_ERROR){
-  //   delay(10000);
-  //   ESP.restart();
-  // }
-
-  // TODO add calibartion
 
   // Setting intterupts and sleep.
   bootCount = 0;
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_14,1);
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  lastBoot= time(NULL);
 }
 
 /// @brief switching between states.

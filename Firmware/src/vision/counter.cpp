@@ -1,7 +1,7 @@
 #include "counter.hpp"
 #include <stdio.h>
 #include <Arduino.h>
-#include "vision.hpp"
+#include "vision.hpp"      
 
 // Pin definition for CAMERA_MODEL_AI_THINKER
 #define PWDN_GPIO_NUM     32
@@ -60,6 +60,16 @@ int counter::begin(){
         return ERROR_CAMERA_FAIL;
     }    
 
+    // Init sd card
+    if(!SD_MMC.begin()){
+        return ERROR_SD_FAIL;
+    }
+  
+    uint8_t cardType = SD_MMC.cardType();
+    if(cardType == CARD_NONE){
+        return ERROR_SD_FAIL;
+    }
+
     return NO_ERROR;
 }
 
@@ -74,17 +84,17 @@ int counter::calibrate(int difference_threshold, int people_threshold){
         return ERROR_CAPTURE_FAILED;
     }
 
-    // Creating mapped buffer
-    counter::base_buffer = (uint8_t*)malloc(fb->len);
-    if (base_buffer == NULL){
-        return ERROR_MALLOC_FAILED;
+    // Saving base image on sd card.
+    File file = fs.open("/base.hex", FILE_WRITE);
+    if(!file){
+        return ERROR_SD_FAIL;
+    } else {
+        file.write(fb->buf, fb->len); // payload (image), payload length
     }
+    file.close();
 
-    // Copying mapped buffer to permanent
-    counter::base_buffer = (uint8_t*)memcpy(counter::base_buffer, fb->buf, fb->len);
-     if (base_buffer == NULL){
-        return ERROR_MEMCPY_FAILED;
-    }
+    // Give ptr back.
+    
 
     return NO_ERROR;
 }
@@ -92,6 +102,22 @@ int counter::calibrate(int difference_threshold, int people_threshold){
 int counter::count(){
     // Predefining variables
     int output, people_count = 0;
+
+    // Creating mapped buffer
+    File file = fs.open("/base.hex", FILE_WRITE);
+    if(!file){
+        return ERROR_SD_FAIL;
+    }  
+
+    // Mallocing buffer
+    counter::base_buffer = (uint8_t*)malloc(86400);
+    if (base_buffer == NULL){
+        return ERROR_MALLOC_FAILED;
+    }
+
+    // Reading bytes
+    file.readBytes((char*)base_buffer, 86400);
+    file.close();
 
     // Checking if base is not null
     if (base_buffer == NULL){
@@ -111,7 +137,7 @@ int counter::count(){
     }
     
     // Doing blob detection operation
-    output = counter::detection->blob_detection(compare_buffer, 0, people_threshold);
+    output = counter::detection->blob_detection(compare_buffer, 10000, people_threshold);
     if (output < 0){
         return ERROR_DETECTION_FAILED;
     }

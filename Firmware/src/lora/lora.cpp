@@ -47,6 +47,7 @@ int lora::begin(){
 
     // Waking up modem
     at_send_check_response(NULL, 100, "AAAA");
+    delay(300);
 
     // Connecting to lora network
     if (at_send_check_response("+AT: OK", 100, "AT\r\n"))
@@ -60,7 +61,7 @@ int lora::begin(){
         at_send_check_response("+CLASS: C", 1000, "AT+CLASS=A\r\n");
         at_send_check_response("+PORT: 8", 1000, "AT+PORT=8\r\n");
         at_send_check_response("+JOIN: Network joined", 12000, "AT+JOIN\r\n");
-        delay(200);
+        delay(300);
         is_join = true;
     }
     else
@@ -77,25 +78,19 @@ int lora::begin(){
 }
 
 int lora::send(int people){
-    CayenneLPP lpp(20);
-    lpp.reset();
-    lpp.addPresence(1, people);
-    lpp.addAnalogOutput(2, (float)people);
+    int16_t format_people = people * 100;
 
     String cmd;
-    char temp[2] = {0};
     cmd += "AT+CMSGHEX=\"";
-    for (size_t i = 0; i < lpp.getSize(); i++)
-    {
-        sprintf(temp, "%02x", lpp.getBuffer()[i]);
-        cmd += temp;
-    }
+    cmd += "0102";
+    char temp[5] = {0};
+    sprintf(temp, "%04x", format_people);
+    cmd += temp;
     cmd +=  "\"\n\r";
-
 
     char result[120];
     strcpy(result, cmd.c_str());
-    
+
     // Sending messages and going into sleep again.
     at_send_check_response("Done", 5000, result);
     at_send_check_response(NULL, 5000, "AT+LOWPOWER");

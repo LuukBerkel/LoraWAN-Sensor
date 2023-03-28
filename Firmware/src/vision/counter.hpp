@@ -3,6 +3,8 @@
 
 #include "esp_camera.h"
 #include "vision.hpp"
+#include "FS.h"               
+#include "SD_MMC.h"         
 
 // Error codes
 #define NO_ERROR 1
@@ -12,6 +14,7 @@
 #define ERROR_MEMCPY_FAILED -3
 #define ERROR_DETECTION_FAILED -4
 #define ERROR_CAMERA_FAIL -5
+#define ERROR_SD_FAIL -6
 
 // The class
 class counter
@@ -23,6 +26,7 @@ private:
     uint16_t* compare_buffer = NULL;
     vision* detection;
     framesize_t resolution;
+    fs::FS &fs = SD_MMC; 
 public:
     /// @brief Constructor of counter
     counter(int width, int heigth, framesize_t resolution);
