@@ -2,106 +2,88 @@
 #include <stdio.h>
 #include "Arduino.h"
 
+static char cmd_buf[512];
+static char ack_buf[512];
 static char recv_buf[512];
 static bool is_exist = false;
 static bool is_join = false;
 
-static int at_send_check_response(char *p_ack, int timeout_ms, char*p_cmd, ...)
+int lora::at_send_check_response(char* p_ack, char* p_cmd, ...)
 {
-    int ch;
-    int index = 0;
-    int startMillis = 0;
-    va_list args;
+    int ch, index, start_time;
+    va_list args_cmd, args_ack;
+    memset(ack_buf, 0, sizeof(ack_buf));
+    memset(cmd_buf, 0, sizeof(cmd_buf));
     memset(recv_buf, 0, sizeof(recv_buf));
-    va_start(args, p_cmd);
-    Serial.printf(p_cmd, args);
-    va_end(args);
-    delay(200);
-    startMillis = millis();
 
-    if (p_ack == NULL)
-    {
-        return 0;
-    }
+    va_start(args_cmd, p_cmd);
+    vsnprintf(cmd_buf, sizeof(cmd_buf), p_cmd, args_cmd);  
+    va_copy(args_ack, args_cmd);
+    vsnprintf(ack_buf, sizeof(ack_buf), p_ack, args_ack);  
+    va_end(args_cmd);
+    va_end(args_ack);
+    Serial1.println(cmd_buf);
 
-    do
-    {
-        while (Serial.available() > 0)
-        {
-            ch = Serial.read();
-            recv_buf[index++] = ch;
-            delay(2);
-        }
 
-        if (strstr(recv_buf, p_ack) != NULL)
-        {
-            return 1;
-        }
-
-    } while (millis() - startMillis < timeout_ms);
-    return 0;
-}
-
-int lora::begin(){
-    Serial.begin(9600);
-
-    // Waking up modem
-    at_send_check_response(NULL, 100, "AAAA");
-    delay(300);
-
-    // Connecting to lora network
-    if (at_send_check_response("+AT: OK", 100, "AT\r\n"))
-    {
-        is_exist = true;
-        at_send_check_response("+ID: AppEui", 1000, "AT+ID\r\n");
-        at_send_check_response("+MODE: LWOTAA", 1000, "AT+MODE=LWOTAA\r\n");
-        at_send_check_response("+DR: EU868", 1000, "AT+DR=EU868\r\n");
-        at_send_check_response("+CH: NUM", 1000, "AT+CH=NUM,0-2\r\n");
-        at_send_check_response("+KEY: APPKEY", 1000, "AT+KEY=APPKEY,\"2B7E151628AED2A6ABF7158809CF4F3C\"\r\n");
-        at_send_check_response("+CLASS: C", 1000, "AT+CLASS=A\r\n");
-        at_send_check_response("+PORT: 8", 1000, "AT+PORT=8\r\n");
-        at_send_check_response("+JOIN: Network joined", 12000, "AT+JOIN\r\n");
-        delay(300);
-        is_join = true;
-    }
-    else
-    {
-        is_exist = false;
-    }
-
-    // Sending error if not connected.
-    if (is_exist && is_join) {
+    start_time = millis();
+    if (p_ack == NULL){
         return NO_ERROR;
     }
+    do
+    {
+        while (Serial1.available() > 0)
+        {
+            ch = Serial1.read();
+            recv_buf[index++] = ch;
+        }
+        if (strstr(recv_buf, ack_buf) != NULL)
+        {
+            return NO_ERROR;
+        }
 
-    return -1;
+    } while (millis() - start_time < this->config->time_out);
+    return ERROR_GENERIC;
 }
 
-int lora::send(int people){
-    int16_t format_people = people * 100;
+int lora::begin(lora_config* config){
+    // Starting serial to lora module
+    Serial1.begin(115200);
+    this->config = config;
 
-    String cmd;
-    cmd += "AT+CMSGHEX=\"";
-    cmd += "0102";
-    char temp[5] = {0};
-    sprintf(temp, "%04x", format_people);
-    cmd += temp;
-    cmd +=  "\"\n\r";
+    // Connecting to lora network
+    if (at_send_check_response("+AT: OK", "AT")) {
+        at_send_check_response("+MODE: LWOTAA", "AT+MODE=LWOTAA");
+        at_send_check_response("+DR: EU868", "AT+DR=EU868");
+        at_send_check_response("+CLASS: A", "AT+CLASS=A");
+        at_send_check_response("+CH: NUM", "AT+CH=NUM,0-2");
+        at_send_check_response("+ID: DevEui", "AT+ID=DevEui,\"%s\"", config->dev_eui);
+        at_send_check_response("+ID: AppEui", "AT+ID=AppEui,\"%s\"", config->app_eui);
+        at_send_check_response("+KEY: APPKEY", "AT+KEY=APPKEY,\"%s\"", config->app_key);
+        at_send_check_response("+PORT: %d", "AT+PORT=%d", config->port);
+        int err = at_send_check_response("+JOIN: Network joined", "AT+JOIN");
+        if (err != NO_ERROR){
+            return ERROR_NO_JOIN;
+        }
+    } else{
+        return ERROR_NO_LORA;
+    }
 
-    char result[120];
-    strcpy(result, cmd.c_str());
+    return NO_ERROR;
+}
 
-    // Sending messages and going into sleep again.
-    at_send_check_response("Done", 5000, result);
-    at_send_check_response(NULL, 5000, "AT+LOWPOWER");
+int lora::send(float temperature, int humidity){
+    char cmd[120] = {0};
+    int16_t temp_raw = (int16_t)(temperature * 10);
+    uint8_t temp_msb = (temp_raw >> 8) & 0xFF;
+    uint8_t temp_lsb = temp_raw & 0xFF;
+    int8_t hum = (uint8_t)humidity;
+    sprintf(cmd, "AT+CMSGHEX=\"%02X%02X%02X%02X%02X\"",
+            0x01, temp_msb, temp_lsb, 0x02, hum);
+
+    int err = at_send_check_response("OK", cmd);
+    if (err != NO_ERROR) {
+        return ERROR_NO_SEND;
+    }
 
     return NO_ERROR;
  }
-
-lora::lora(/* args */)
-{
-}
-
-lora::~lora()
-{
-}

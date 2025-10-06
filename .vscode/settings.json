@@ -12,6 +12,7 @@
         "initializer_list": "cpp",
         "algorithm": "cpp",
         "functional": "cpp",
-        "new": "cpp"
+        "new": "cpp",
+        "system_error": "cpp"
     }
 }
