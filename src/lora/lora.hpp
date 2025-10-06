@@ -1,6 +1,8 @@
 #ifndef LORA_H
 #define LORA_H
 
+#include <stdint.h>
+
 #define NO_ERROR 1
 #define ERROR_GENERIC 0
 #define ERROR_NO_LORA -1

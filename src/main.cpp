@@ -42,7 +42,6 @@ void setup() {
     delay(SLEEP_TIME);
     ESP.restart();
   }
-
 }
 
 

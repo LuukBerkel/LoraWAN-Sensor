@@ -5,8 +5,6 @@
 static char cmd_buf[512];
 static char ack_buf[512];
 static char recv_buf[512];
-static bool is_exist = false;
-static bool is_join = false;
 
 int lora::at_send_check_response(char* p_ack, char* p_cmd, ...)
 {
@@ -22,7 +20,7 @@ int lora::at_send_check_response(char* p_ack, char* p_cmd, ...)
     vsnprintf(ack_buf, sizeof(ack_buf), p_ack, args_ack);  
     va_end(args_cmd);
     va_end(args_ack);
-    Serial1.println(cmd_buf);
+    Serial2.println(cmd_buf);
 
 
     start_time = millis();
@@ -31,9 +29,9 @@ int lora::at_send_check_response(char* p_ack, char* p_cmd, ...)
     }
     do
     {
-        while (Serial1.available() > 0)
+        while (Serial2.available() > 0)
         {
-            ch = Serial1.read();
+            ch = Serial2.read();
             recv_buf[index++] = ch;
         }
         if (strstr(recv_buf, ack_buf) != NULL)
@@ -42,12 +40,13 @@ int lora::at_send_check_response(char* p_ack, char* p_cmd, ...)
         }
 
     } while (millis() - start_time < this->config->time_out);
+    Serial.println(recv_buf);
     return ERROR_GENERIC;
 }
 
 int lora::begin(lora_config* config){
     // Starting serial to lora module
-    Serial1.begin(115200);
+    Serial2.begin(115200);
     this->config = config;
 
     // Connecting to lora network
