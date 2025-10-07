@@ -6,10 +6,9 @@
 #include "time.h"
 #include "DHT.h"
 
-#define DHTPIN 2    
+#define DHTPIN 22
 #define DHTTYPE DHT11  
 
-#define DEBUG_MODE
 #define SLEEP_TIME 100000  
 
 lora_config cfg = {
@@ -22,45 +21,38 @@ lora lorawan = lora();
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
-#ifdef DEBUG_MODE
   Serial.begin(115200);
   Serial.println("Sensor is starting...");
-#endif
 
   dht.begin();
   int err = lorawan.begin(&cfg);
 
-#ifdef DEBUG_MODE
   if (err != NO_ERROR) {
     Serial.println("Failed to join LoraWAN network");
-  } else {
-    Serial.println("Sensor joined LoraWAN network");
-  }
-#endif
-
-  if (err != NO_ERROR) {
     delay(SLEEP_TIME);
     ESP.restart();
+  } else {
+    Serial.println("Sensor joined LoraWAN network");
   }
 }
 
 
 void loop() {
-  int humidity = dht.readHumidity();
   float temperature = dht.readTemperature();
-  int err = lorawan.send(temperature, humidity);
+  float humidity = dht.readHumidity();
 
-#ifdef DEBUG_MODE
+  Serial.print("Measurment: Temp=");
+  Serial.print(temperature);
+  Serial.print("C, Hum=");
+  Serial.print(humidity);
+  Serial.println("%");
+
+  int err = lorawan.send(temperature, humidity);
   if (err != NO_ERROR) {
-    Serial.println("Failed to send data via LoRaWAN");
+    Serial.println("Failed to send measurement via LoRaWAN");
   } else {
-    Serial.print("Data sent: Temp=");
-    Serial.print(temperature);
-    Serial.print("C, Hum=");
-    Serial.print(humidity);
-    Serial.println("%");
+    Serial.println("Succesfully send measurement via LoRaWAN");
   }
-#endif
 
   delay(SLEEP_TIME);
 }
