@@ -9,13 +9,14 @@
 #define DHTPIN 22
 #define DHTTYPE DHT11  
 
-#define SLEEP_TIME 100000  
+#define SLEEP_TIME_MS 100000  
 
 lora_config cfg = {
     .app_eui = "0000000000000000",
     .app_key = "fe5089e2b616abc105318ad2ccd49ede",
     .dev_eui = "1122334455667788",
     .port = 5,
+    .time_out_ms = 30000,
 };
 lora lorawan = lora();
 
@@ -30,7 +31,7 @@ void setup() {
 
   if (err != NO_ERROR) {
     Serial.println("Failed to join LoraWAN network");
-    delay(SLEEP_TIME);
+    delay(SLEEP_TIME_MS);
     ESP.restart();
   } else {
     Serial.println("Sensor joined LoraWAN network");
@@ -55,5 +56,5 @@ void loop() {
     Serial.println("Succesfully send measurement via LoRaWAN");
   }
 
-  delay(SLEEP_TIME);
+  delay(SLEEP_TIME_MS);
 }

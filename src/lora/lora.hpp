@@ -17,7 +17,7 @@ struct lora_config {
     char app_key[33];
     char dev_eui[17];
     uint32_t port;
-    uint32_t time_out;
+    uint32_t time_out_ms;
 };
 
 class lora

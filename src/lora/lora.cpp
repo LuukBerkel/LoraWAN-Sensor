@@ -3,11 +3,13 @@
 #include "Arduino.h"
 
 static char cmd_buf[512];
-static char recv_buf[512];
+static char recv_buf[1024];
 
 int lora::at_send_check_response(const char* p_ack, const char* p_cmd, ...)
 {
-    int ch, index, start_time;
+    int ch = 0;
+    int index = 0;
+    int start_time = 0;
     va_list args;
     memset(cmd_buf, 0, sizeof(cmd_buf));
     memset(recv_buf, 0, sizeof(recv_buf));
@@ -16,7 +18,7 @@ int lora::at_send_check_response(const char* p_ack, const char* p_cmd, ...)
     va_end(args);
     Serial.println(cmd_buf);
     Serial2.println(cmd_buf);
-    delay(300);
+    delay(100);
 
     start_time = millis();
     if (p_ack == NULL){
@@ -32,13 +34,14 @@ int lora::at_send_check_response(const char* p_ack, const char* p_cmd, ...)
         }
 
         recv_buf[index++] = '\0';
-        Serial.print(recv_buf);
+        index--;
         if (strstr(recv_buf, p_ack) != NULL)
         {
             return NO_ERROR;
         }
 
-    } while (millis() - start_time < this->config->time_out);
+    } while (millis() - start_time < this->config->time_out_ms);
+    Serial.print(recv_buf);
     return ERROR_GENERIC;
 }
 
