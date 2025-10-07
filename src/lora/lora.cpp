@@ -9,14 +9,13 @@ int lora::at_send_check_response(const char* p_ack, const char* p_cmd, ...)
 {
     int ch, index, start_time;
     va_list args;
-
+    memset(cmd_buf, 0, sizeof(cmd_buf));
     memset(recv_buf, 0, sizeof(recv_buf));
     va_start(args, p_cmd);
-    Serial2.printf(p_cmd, args);
-    Serial.printf(p_cmd, args);
-    Serial2.print("\r\n");
-    Serial.print("\r\n");
+    vsnprintf(cmd_buf, sizeof(cmd_buf), p_cmd, args);
     va_end(args);
+    Serial.println(cmd_buf);
+    Serial2.println(cmd_buf);
     delay(300);
 
     start_time = millis();
