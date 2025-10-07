@@ -14,7 +14,8 @@
 lora_config cfg = {
     .app_eui = "0000000000000000",
     .app_key = "fe5089e2b616abc105318ad2ccd49ede",
-    .dev_eui = "8899AABBCCDDEEFF",
+    .dev_eui = "1122334455667788",
+    .port = 5,
 };
 lora lorawan = lora();
 

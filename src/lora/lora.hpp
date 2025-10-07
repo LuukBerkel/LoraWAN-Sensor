@@ -13,9 +13,9 @@
 #define ELSYS_HUMIDITY  0x02
 
 struct lora_config {
-    const char* app_eui;
-    const char* app_key;
-    const char* dev_eui;
+    char app_eui[17];
+    char app_key[33];
+    char dev_eui[17];
     uint32_t port;
     uint32_t time_out;
 };

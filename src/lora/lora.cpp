@@ -13,7 +13,9 @@ int lora::at_send_check_response(const char* p_ack, const char* p_cmd, ...)
     memset(recv_buf, 0, sizeof(recv_buf));
     va_start(args, p_cmd);
     Serial2.printf(p_cmd, args);
+    Serial.printf(p_cmd, args);
     Serial2.print("\r\n");
+    Serial.print("\r\n");
     va_end(args);
     delay(300);
 
@@ -47,15 +49,11 @@ int lora::begin(lora_config* config){
     this->config = config;
 
     if (at_send_check_response("OK", "AT")) {
-        at_send_check_response("+MODE: LWOTAA", "AT+MODE=LWOTAA");
-        at_send_check_response("+DR: EU868", "AT+DR=EU868");
-        at_send_check_response("+CLASS: A", "AT+CLASS=A");
-        at_send_check_response("+CH: NUM", "AT+CH=NUM,0-2");
-        at_send_check_response("+ID: DevEui", "AT+ID=DevEui,\"%s\"", config->dev_eui);
-        at_send_check_response("+ID: AppEui", "AT+ID=AppEui,\"%s\"", config->app_eui);
-        at_send_check_response("+KEY: APPKEY", "AT+KEY=APPKEY,\"%s\"", config->app_key);
-        at_send_check_response("+PORT: %d", "AT+PORT=%d", config->port);
-        int err = at_send_check_response("+JOIN: Network joined", "AT+JOIN");
+        at_send_check_response("OK", "AT+CLASS=A");
+        at_send_check_response("OK", "AT+DEVEUI=%s", config->dev_eui);
+        at_send_check_response("OK", "AT+APPEUI=%s", config->app_eui);
+        at_send_check_response("OK", "AT+APPKEY=%s", config->app_key);
+        int err = at_send_check_response("+EVT:JOINED", "AT+JOIN=1:0:10:0");
         if (err != NO_ERROR){
             return ERROR_NO_JOIN;
         }
@@ -72,7 +70,7 @@ int lora::send(float temperature, int humidity){
     uint8_t temp_msb = (temp_raw >> 8) & 0xFF;
     uint8_t temp_lsb = temp_raw & 0xFF;
     int8_t hum = (uint8_t)humidity;
-    sprintf(cmd, "AT+CMSGHEX=\"%02X%02X%02X%02X%02X\"",
+    sprintf(cmd, "AT+SEND=%d:%02X%02X%02X%02X%02X", this->config->port,
             0x01, temp_msb, temp_lsb, 0x02, hum);
 
     int err = at_send_check_response("OK", cmd);
