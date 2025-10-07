@@ -13,9 +13,9 @@
 #define ELSYS_HUMIDITY  0x02
 
 struct lora_config {
-    char app_eui[17];
-    char app_key[33];
-    char dev_eui[17];
+    const char* app_eui;
+    const char* app_key;
+    const char* dev_eui;
     uint32_t port;
     uint32_t time_out_ms;
 };
@@ -27,7 +27,7 @@ private:
     int at_send_check_response(const char* p_ack, const char* p_cmd, ...);
 public:
     int begin(lora_config* cfg);
-    int send(float temperature, int humidity);
+    int send(float temperature, float humidity);
 };
 
 

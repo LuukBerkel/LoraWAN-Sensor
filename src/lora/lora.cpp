@@ -7,7 +7,6 @@ static char recv_buf[1024];
 
 int lora::at_send_check_response(const char* p_ack, const char* p_cmd, ...)
 {
-    int ch = 0;
     int index = 0;
     int start_time = 0;
     va_list args;
@@ -33,10 +32,10 @@ int lora::at_send_check_response(const char* p_ack, const char* p_cmd, ...)
             delay(2);
         }
 
-        recv_buf[index++] = '\0';
-        index--;
+        recv_buf[index+1] = '\0';
         if (strstr(recv_buf, p_ack) != NULL)
         {
+            Serial.print(recv_buf);
             return NO_ERROR;
         }
 
@@ -66,7 +65,7 @@ int lora::begin(lora_config* config){
     return NO_ERROR;
 }
 
-int lora::send(float temperature, int humidity){
+int lora::send(float temperature, float humidity){
     char cmd[120] = {0};
     int16_t temp_raw = (int16_t)(temperature * 10);
     uint8_t temp_msb = (temp_raw >> 8) & 0xFF;

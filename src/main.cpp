@@ -28,7 +28,6 @@ void setup() {
 
   dht.begin();
   int err = lorawan.begin(&cfg);
-
   if (err != NO_ERROR) {
     Serial.println("Failed to join LoraWAN network");
     delay(SLEEP_TIME_MS);
