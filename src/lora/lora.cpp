@@ -49,18 +49,25 @@ int lora::begin(lora_config* config){
     delay(100);
     this->config = config;
 
-    if (at_send_check_response("OK", "AT")) {
-        at_send_check_response("OK", "AT+CLASS=A");
-        at_send_check_response("OK", "AT+DEVEUI=%s", config->dev_eui);
-        at_send_check_response("OK", "AT+APPEUI=%s", config->app_eui);
-        at_send_check_response("OK", "AT+APPKEY=%s", config->app_key);
-        int err = at_send_check_response("+EVT:JOINED", "AT+JOIN=1:0:10:0");
-        if (err != NO_ERROR){
-            return ERROR_NO_JOIN;
-        }
-    } else{
+    int err = at_send_check_response("OK", "AT");
+    if (err != NO_ERROR) {
         return ERROR_NO_LORA;
     }
+    
+    err = at_send_check_response("AT+NJS=1", "AT+NJS=?");
+    if (err == NO_ERROR) { 
+        return NO_ERROR;
+    }
+
+    at_send_check_response("OK", "AT+CLASS=A");
+    at_send_check_response("OK", "AT+DEVEUI=%s", config->dev_eui);
+    at_send_check_response("OK", "AT+APPEUI=%s", config->app_eui);
+    at_send_check_response("OK", "AT+APPKEY=%s", config->app_key);
+    err = at_send_check_response("+EVT:JOINED", "AT+JOIN=1:0:10:0");
+    if (err != NO_ERROR){
+        return ERROR_NO_JOIN;
+    }
+
 
     return NO_ERROR;
 }
